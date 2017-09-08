@@ -107,17 +107,27 @@ module MoSQL
         opts.on("--oplog-filter [filter]", "An additional JSON filter for the oplog query") do |filter|
           @options[:oplog_filter] = JSON.parse(filter)
         end
+
+        opts.on("--log4r-yaml-file [file]", "YAML file for configuring Log4r") do |log4r_yaml_file|
+          @options[:log4r_yaml_file] = log4r_yaml_file
+        end
       end
 
       optparse.parse!(@args)
 
-      log = Log4r::Logger.new('Stripe')
-      log.outputters = Log4r::StdoutOutputter.new(STDERR)
-      if options[:verbose] >= 1
-        log.level = Log4r::DEBUG
+      if @options[:log4r_yaml_file]
+        MoSQL::Logging.configure_by_yaml(@options[:log4r_yaml_file])
+        log.debug("Using logger configured by yaml")
       else
-        log.level = Log4r::INFO
+        log.debug("Using default logger")
       end
+
+      if options[:verbose] >= 1
+        MoSQL::Logging.configure_level(Log4r::DEBUG)
+      else
+        MoSQL::Logging.configure_level(Log4r::INFO)
+      end
+
     end
 
     def connect_mongo
@@ -160,7 +170,8 @@ module MoSQL
       metadata_table = MoSQL::Tailer.create_table(@sql.db, 'mosql_tailers')
 
       @tailer = MoSQL::Tailer.new([@mongo], :existing, metadata_table,
-                                  :service => options[:service])
+                                  :service => options[:service],
+                                  :log4r_yaml_file => options[:log4r_yaml_file])
 
       @streamer = Streamer.new(:options => @options,
                                :tailer  => @tailer,
