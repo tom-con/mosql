@@ -110,7 +110,6 @@ module MoSQL
       end
 
       optparse.parse!(@args)
-
       log = Log4r::Logger.new('Stripe')
       log.outputters = Log4r::StdoutOutputter.new(STDERR)
       if options[:verbose] >= 1
@@ -160,9 +159,9 @@ module MoSQL
       metadata_table = MoSQL::Tailer.create_table(@sql.db, 'mosql_tailers')
 
       @tailer = MoSQL::Tailer.new([@mongo], :existing, metadata_table,
-                                  :service => options[:service])
+                                  :service => @options[:service])
 
-      @streamer = Streamer.new(:options => @options,
+      @streamer = MoSQL::Streamer.new(:options => @options,
                                :tailer  => @tailer,
                                :mongo   => @mongo,
                                :sql     => @sql,
